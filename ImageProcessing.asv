@@ -13,7 +13,7 @@ classdef ImageProcessing
             end
         end
 
-        %__ Flip
+        %__
         % Funcția Flip inversează orientarea unei imagini, fie pe orizontală, 
         % fie pe verticală, prin rearanjarea poziției pixelilor corespunzator 
         % direcției specificate.
@@ -29,7 +29,7 @@ classdef ImageProcessing
             end
         end
         
-        %__ Stacking
+        %__
         % Funcția Stacking combină două imagini prin alăturare, 
         % fie pe verticală, fie pe orizontală, rezultând o 
         % singură imagine compusă.
@@ -62,7 +62,7 @@ classdef ImageProcessing
             end
         end
 
-        %__ Zoom
+        %__
         % Funcția Zoom mărește o imagine prin replicarea fiecarui pixel într-un bloc 
         % de dimensiune proporțională cu un factor dat, rezultând o 
         % imagine de dimensiuni mai mari, dar cu acelasi conținut vizual.
@@ -86,7 +86,7 @@ classdef ImageProcessing
             end
         end
 
-        %__ Shape
+        %__
         % Funcția Shape decupează o imagine conform unei 
         % forme geometrice specificate (pătrat sau cerc).
 
@@ -117,7 +117,7 @@ classdef ImageProcessing
             end
         end
 
-        %__ Brightness_Contrast
+        %__
         % Funcția Brightness_Contrast ajustează valorile de intensitate ale 
         % pixelilor unei imagini, fie prin adăugarea unei constante, 
         % fie prin inmultirea cu un factor.
@@ -144,73 +144,11 @@ classdef ImageProcessing
             end
         end
 
-        %__ Compression
+        %__
         % Funcția Compression reduce dimensiunea fișierului prin 
         % eliminatrea redundanței sau a detaliilor greu perceptibile, 
         % păstrând cât mai mult din calitatea vizuală originală.
 
-        function new = Compression(obj, percentage)
-            new = [];
-            try
-                if(percentage >= 0 && percentage <= 100)
-                    double_img = im2double(obj.Image);
         
-                    R = double_img(:,:,1);
-                    G = double_img(:,:,2);
-                    B = double_img(:,:,3);
-                
-                    [U_R, S_R, V_R] = svd(R);
-                    [U_G, S_G, V_G] = svd(G);
-                    [U_B, S_B, V_B] = svd(B);
-                
-                    com_R = U_R(:,1:percentage) * S_R(1:percentage, 1:percentage) * V_R(:,1:percentage)';
-                    com_G = U_G(:,1:percentage) * S_G(1:percentage, 1:percentage) * V_G(:,1:percentage)';
-                    com_B = U_B(:,1:percentage) * S_B(1:percentage, 1:percentage) * V_B(:,1:percentage)';
-                    
-                    new = cat(3, com_R, com_G, com_B);
-                else
-                    error("Percentage value must be between 0 and 100.");
-                end
-            catch Er
-                disp("Error: " + Er.message);
-            end
-        end
-
-        %__ Estompare
-        % Funcția Estompare aplică un filtru care reduce variațiile bruste de 
-        % intensitatea dintre pixeli, netezind 
-        % tranzițiile si diminuarea detaliilor fine pentru a obține un aspect 
-        % mai uniform sau pentru a reduce zgomotul vizual din imagine.
-
-        function new = Estompare(obj, value_Blur)
-            try
-                [rows, cols, channels] = size(obj.Image);
-                new = zeros(rows,cols, channels, 'like', obj.Image);
-        
-                if ~(value_Blur >= 1 && value_Blur <= min(rows,cols))
-                    error("'value_Blur' must be between 0 and " + min(rows,cols) + ".");
-                else
-        
-                    for c = 1:channels
-                        for i = 1:rows
-                            top = max(i - value_Blur, 1);
-                            bottom = min(rows, i + value_Blur);
-                            for j = 1:cols
-                                left = max(j - value_Blur, 1);
-                                right = min(cols, j + value_Blur);
-            
-                                submatrix = obj.Image(top:bottom, left:right, c);
-                                new(i,j,c) = sum(submatrix(:)) / numel(submatrix);
-                            end
-                        end
-                    end
-        
-                end
-        
-            catch Er
-                disp("Error: " + Er.message);
-                new = obj.Image;
-            end
-        end
     end
 end
