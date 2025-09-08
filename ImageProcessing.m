@@ -1,4 +1,4 @@
-classdef ImageProcessing
+classdef ImageProcessing < handle
   
     properties
         Image
@@ -12,106 +12,127 @@ classdef ImageProcessing
                 error("Unsupported input type");
             end
         end
+        
+        %__ RGB to GrayScale
+        %Not Implemented
+
+        %__ RGB to HSV
+        %Not Implemented
+
+        %__ RGB to LAB
+        %Not Implemented
+
+        %__ RGB to BGR
+        %Not Implemented
 
         %__ Flip
         % Funcția Flip inversează orientarea unei imagini, fie pe orizontală, 
         % fie pe verticală, prin rearanjarea poziției pixelilor corespunzator 
         % direcției specificate.
 
-        function new = Flip(obj, Direction)
+        function Flip(obj, Direction)
             switch lower(Direction)
                 case "horizontal"
-                    new = obj.Image(1:end, end:-1:1, 1:3);
+                    obj.Image = obj.Image(1:end, end:-1:1, 1:3);
                 case "vertical"
-                    new = obj.Image(end:-1:1, 1:end, 1:3);
+                    obj.Image = obj.Image(end:-1:1, 1:end, 1:3);
                 otherwise
                     error("Direction can be 'horizontal' or 'vertical'")
             end
         end
         
+        %__ Rotate
+        %Not Implemented
+        
+        %__ Resizing
+        %Not Implemented
+
+        %__ Scaling
+        %Not Implemented
+
+        %__ Interpolation
+        %____ Nearest
+        %____ Linear
+        %____ Cubic
+        %____ Area
+        %____ Lanczos4
+        %Not Implemented
+
         %__ Stacking
         % Funcția Stacking combină două imagini prin alăturare, 
         % fie pe verticală, fie pe orizontală, rezultând o 
         % singură imagine compusă.
 
-        function new = Stacking(obj, img, Direction)
+        function Stacking(obj, img, Direction)
             try
-                [first_rows, first_cols, ~] = size(obj.Image);
-                [second_rows, second_cols, ~] = size(img);
-                if Direction == "horizontal"
+                firstImage = obj.Image;
+                secondImage = img.Image;
+
+                [first_rows, first_cols, ~] = size(firstImage);
+                [second_rows, second_cols, ~] = size(secondImage);
+
+                if lower(Direction) == "horizontal"
                     height = max(first_rows, second_rows);
                     width = first_cols + second_cols;
-                    new = zeros(height, width, 3, 'like', obj.Image);
+
+                    newImage = zeros(height, width, 3, 'like', firstImage);
                     
-                    new(1:first_rows, 1:first_cols, :) = obj.Image;
-                    new(1:second_rows, first_cols+1:width, :) = img;
+                    newImage(1:first_rows, 1:first_cols, :) = firstImage;
+
+                    newImage(1:second_rows, first_cols+1:width, :) = secondImage;
         
-                elseif Direction == "vertical"
+                elseif lower(Direction) == "vertical"
                     height = first_rows + second_rows;
                     width = max(first_cols, second_cols);
-                    new = zeros(height, width, 3, 'like', img);
+
+                    newImage = zeros(height, width, 3, 'like', firstImage);
         
-                    new(1:first_rows, 1:first_cols, :) = obj.Image;
-                    new(first_rows+1:height, 1:second_cols, :) = img;
+                    newImage(1:first_rows, 1:first_cols, :) = firstImage;
+                    newImage(first_rows+1:height, 1:second_cols, :) = secondImage;
         
                 else
                     error("Direction can be 'horizontal' or 'vertical'")
                 end
+                
+                obj.Image = newImage;
+
             catch Er
                 disp("Error: " + Er.message);
             end
         end
-
-        %__ Zoom
-        % Funcția Zoom mărește o imagine prin replicarea fiecarui pixel într-un bloc 
-        % de dimensiune proporțională cu un factor dat, rezultând o 
-        % imagine de dimensiuni mai mari, dar cu acelasi conținut vizual.
-
-        function new = Zoom(obj, factor)
-            try 
-                [rows, cols, ~] = size(obj.Image);
-                new = zeros(rows * factor, cols * factor, 3, 'like', obj.Image);
         
-                for i = 1:rows
-                    for j = 1:cols
-                        for x = 1:factor
-                            for y = 1:factor
-                                new((i-1) * factor + x, (j-1) * factor + y, 1:3) = obj.Image(i,j,1:3);
-                            end
-                        end
-                    end
-                end
-            catch Er
-                disp("Error: " + Er.message);
-            end
-        end
+        %__ Crop
+        %Not Implemented
 
         %__ Shape
         % Funcția Shape decupează o imagine conform unei 
         % forme geometrice specificate (pătrat sau cerc).
 
-        function new = Shape(obj, r, shape)
+        function Shape(obj, r, shape)
             try
                 [rows, cols, ~] = size(obj.Image);
-                new = zeros(rows, cols, 3, 'like', obj.Image);
+                newImage = zeros(rows, cols, 3, 'like', obj.Image);
         
                 Ox = round(rows/2);
                 Oy = round(cols/2);
         
                 switch lower(shape)
                     case "square"
-                        new(Ox - r:r + Ox, Oy - r:r + Oy, 1:3) = obj.Image(Ox - r:r + Ox, Oy - r:r + Oy, 1:3);
+                        newImage(Ox - r:r + Ox, Oy - r:r + Oy, 1:3) = obj.Image(Ox - r:r + Ox, Oy - r:r + Oy, 1:3);
                     case "circle"
                         for i = 1:rows
                             for j = 1:cols
                                 if sqrt((Ox - i)^2 + (Oy - j)^2) <= r
-                                    new(i,j,1:3) = obj.Image(i,j,1:3);
+                                    newImage(i,j,1:3) = obj.Image(i,j,1:3);
                                 end
                             end
                         end
                     otherwise
                         error("The shape does not exist!");
                 end
+                
+                obj.Image = newImage;
+
             catch Er
                 disp("Error: " + Er.message);
             end
@@ -122,8 +143,7 @@ classdef ImageProcessing
         % pixelilor unei imagini, fie prin adăugarea unei constante, 
         % fie prin inmultirea cu un factor.
 
-        function new = Brightness_Contrast(obj, value_Brightness, value_Contrast)
-            new = [];
+        function Brightness_Contrast(obj, value_Brightness, value_Contrast)
             try
                 if((value_Brightness >= -100) && (value_Brightness <= 100))
                     double_image = double(obj.Image);
@@ -135,7 +155,7 @@ classdef ImageProcessing
                     end
         
                     double_image = (double_image - 128) * value_Contrast + 128;
-                    new = uint8(min(max(double_image,0),255));
+                    obj.Image = uint8(min(max(double_image,0),255));
                 else
                     error("Brightness value must be between -100 and 100.");
                 end
@@ -149,8 +169,7 @@ classdef ImageProcessing
         % eliminatrea redundanței sau a detaliilor greu perceptibile, 
         % păstrând cât mai mult din calitatea vizuală originală.
 
-        function new = Compression(obj, percentage)
-            new = [];
+        function Compression(obj, percentage)
             try
                 if(percentage >= 0 && percentage <= 100)
                     double_img = im2double(obj.Image);
@@ -167,7 +186,7 @@ classdef ImageProcessing
                     com_G = U_G(:,1:percentage) * S_G(1:percentage, 1:percentage) * V_G(:,1:percentage)';
                     com_B = U_B(:,1:percentage) * S_B(1:percentage, 1:percentage) * V_B(:,1:percentage)';
                     
-                    new = cat(3, com_R, com_G, com_B);
+                    obj.Image = cat(3, com_R, com_G, com_B);
                 else
                     error("Percentage value must be between 0 and 100.");
                 end
@@ -182,7 +201,7 @@ classdef ImageProcessing
         % tranzițiile si diminuarea detaliilor fine pentru a obține un aspect 
         % mai uniform sau pentru a reduce zgomotul vizual din imagine.
 
-        function new = Estompare(obj, value_Blur)
+        function Estompare(obj, value_Blur)
             try
                 [rows, cols, channels] = size(obj.Image);
                 new = zeros(rows,cols, channels, 'like', obj.Image);
@@ -204,13 +223,33 @@ classdef ImageProcessing
                             end
                         end
                     end
-        
+                    
+                    obj.Image = new;
+
                 end
         
             catch Er
                 disp("Error: " + Er.message);
-                new = obj.Image;
             end
         end
+
+        %__ Shearing
+        %Not Implemented
+        
+        %__ Translation
+        %Not Implemented
+
+        %__ Edge Detection
+        %____ Sobel
+        %____ Canny
+        %____ Laplacian
+        %Not Implemented
+
+        %__ Histogram
+        %Not Implemented
+
+        %__ Histogram Equalization
+        %Not Implemented
+
     end
 end
