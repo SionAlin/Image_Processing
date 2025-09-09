@@ -14,7 +14,28 @@ classdef ImageProcessing < handle
         end
         
         %__ RGB to GrayScale
-        %Not Implemented
+        % Funcția RGB2GrayScale transforma imaginea RGB
+        % intr-o imagine alb-negru.
+        
+        function new = RGB2GrayScale(obj)
+            try
+                img = im2double(obj.Image);
+
+                R = img(:,:,1);
+                G = img(:,:,2);
+                B = img(:,:,3);
+    
+                gamma = 1.04;
+                r_const =  0.2126;
+                g_const =  0.7152;
+                b_const =  0.0722;
+
+                new.Image = (r_const * (R .^ gamma)) + (g_const * (G .^ gamma)) + (b_const * (B .^ gamma));
+                
+            catch Er
+                disp("Error: " + Er.message);
+            end
+        end
 
         %__ RGB to HSV
         %Not Implemented
@@ -249,6 +270,13 @@ classdef ImageProcessing < handle
         %Not Implemented
 
         %__ Histogram Equalization
+        %Not Implemented
+
+        %__ Draw
+        %____ Line
+        %____ Circle
+        %____ Square
+        %____ Rectangle
         %Not Implemented
 
     end
