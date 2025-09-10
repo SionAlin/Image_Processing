@@ -2,12 +2,14 @@ classdef ImageProcessing < handle
   
     properties
         Image
+        Image_double
     end
 
     methods
         function obj = ImageProcessing(inputImage)
             if(ischar(inputImage) || isstring(inputImage)) && isfile(inputImage)
                 obj.Image = imread(inputImage);
+                obj.Image_double = im2double(obj.Image);
             else
                 error("Unsupported input type");
             end
@@ -19,11 +21,9 @@ classdef ImageProcessing < handle
         
         function new = RGB2GrayScale(obj)
             try
-                img = im2double(obj.Image);
-
-                R = img(:,:,1);
-                G = img(:,:,2);
-                B = img(:,:,3);
+                R = obj.Image_double(:,:,1);
+                G = obj.Image_double(:,:,2);
+                B = obj.Image_double(:,:,3);
     
                 gamma = 1.04;
                 r_const =  0.2126;
@@ -38,7 +38,45 @@ classdef ImageProcessing < handle
         end
 
         %__ RGB to HSV
-        %Not Implemented
+        % Funcția RGB2HSV transforma imaginea RGB
+        % intr-o imagine HSV.
+        
+        function [H, S, V] = RGB2HSV(obj)
+            try
+                
+                R = obj.Image_double(:,:,1); 
+                G = obj.Image_double(:,:,2); 
+                B = obj.Image_double(:,:,3);
+                
+                Max = max(max(R,G),B);
+
+                % V
+                V = Max; 
+                Min = min(min(R,G),B);
+                delta = Max - Min;
+                
+                % S
+                S = zeros(size(Max));
+                S(Max ~= 0) = delta(Max ~= 0) ./ Max(Max ~= 0); 
+                
+                % H
+                H = zeros(size(Max));
+                mask = (Max == R) & (delta ~= 0);
+                H(mask) = 60 * (0 + (G(mask) - B(mask)) ./ delta(mask));
+
+                mask = (Max == G) & (delta ~= 0);
+                H(mask) = 60 * (2 + (B(mask) - R(mask)) ./ delta(mask));
+
+                mask = (Max == B) & (delta ~= 0);
+                H(mask) = 60 * (4 + (R(mask) - G(mask)) ./ delta(mask));
+
+                H(delta == 0) = 0; % Normalize
+                H = H / 360; 
+
+            catch Er
+                disp("Error: " + Er.message)
+            end
+        end
 
         %__ RGB to LAB
         %Not Implemented
