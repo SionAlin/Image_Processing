@@ -2,14 +2,12 @@ classdef ImageProcessing < handle
   
     properties
         Image
-        Image_double
     end
 
     methods
         function obj = ImageProcessing(inputImage)
             if(ischar(inputImage) || isstring(inputImage)) && isfile(inputImage)
                 obj.Image = imread(inputImage);
-                obj.Image_double = im2double(obj.Image);
             else
                 error("Unsupported input type");
             end
@@ -21,9 +19,10 @@ classdef ImageProcessing < handle
         
         function new = RGB2GrayScale(obj)
             try
-                R = obj.Image_double(:,:,1);
-                G = obj.Image_double(:,:,2);
-                B = obj.Image_double(:,:,3);
+                image = im2double(obj.Image);
+                R = image(:,:,1);
+                G = image(:,:,2);
+                B = image(:,:,3);
     
                 gamma = 1.04;
                 r_const =  0.2126;
@@ -43,10 +42,11 @@ classdef ImageProcessing < handle
         
         function [H, S, V] = RGB2HSV(obj)
             try
-                
-                R = obj.Image_double(:,:,1); 
-                G = obj.Image_double(:,:,2); 
-                B = obj.Image_double(:,:,3);
+
+                image = im2double(obj.Image);
+                R = image(:,:,1);
+                G = image(:,:,2);
+                B = image(:,:,3);
                 
                 Max = max(max(R,G),B);
 
