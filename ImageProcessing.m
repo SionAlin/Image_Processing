@@ -79,10 +79,96 @@ classdef ImageProcessing < handle
         end
 
         %__ RGB to LAB
-        %Not Implemented
+        % Funcția RGB2LAB transforma imaginea RGB
+        % intr-o imagine LAB (CIELAB).
+
+        function [L, a, b] = RGB2LAB(obj)
+
+            function new = f(t)
+                new = t .^ (1/3);
+                mask = t <= 0.008856;
+                new(mask) = 7.787 * t(mask) + 16/116;
+            end
+
+            try
+                R = double(obj.Image(:,:,1));
+                G = double(obj.Image(:,:,2));
+                B = double(obj.Image(:,:,3));
+
+                Rn = R / 255;
+                Gn = G / 255;
+                Bn = B / 255;
+
+                Rp = zeros(size(R));
+                Gp = zeros(size(G));
+                Bp = zeros(size(B));
+
+
+                mask = (Rn <= 0.04045);
+                Rp(mask) = Rn(mask) / 12.92;
+                Rp(~mask) = ((Rn(~mask) + 0.055)/1.055).^2.4;
+                
+                mask = (Gn <= 0.04045);
+                Gp(mask) = Gn(mask) / 12.92;
+                Gp(~mask) = ((Gn(~mask) + 0.055)/1.055).^2.4;
+                
+                mask = (Bn <= 0.04045);
+                Bp(mask) = Bn(mask) / 12.92;
+                Bp(~mask) = ((Bn(~mask) + 0.055)/1.055).^2.4;
+
+
+                M = [0.4124564 0.3575761 0.1804375;
+                     0.2126729 0.7151522 0.0721750;
+                     0.0193339 0.1191920 0.9503041];
+                
+                [h, w] = size(Rp);
+                XYZ = zeros(h, w, 3);
+                
+                for i = 1:h
+                    for j = 1:w
+                        rgb = [Rp(i,j); Gp(i,j); Bp(i,j)];
+                        XYZ(i,j,:) = M * rgb;
+                    end
+                end
+
+
+                X = XYZ(:,:,1);
+                Y = XYZ(:,:,2);
+                Z = XYZ(:,:,3);
+                
+                Xn = 95.047;
+                Yn = 100.000;
+                Zn = 108.883;
+                
+                x = X/Xn;
+                y = Y/Yn;
+                z = Z/Zn;
+                
+                L = 116 * f(y) - 16;
+                a = 500 * (f(x) - f(y));
+                b = 200 * (f(y) - f(z));
+
+            catch Er
+                disp("Error: " + Er.message);
+                L = []; a = []; b = [];
+            end
+        end
 
         %__ RGB to BGR
-        %Not Implemented
+        % Funcția RGB2BGR transforma imaginea RGB
+        % intr-o imagine BGR
+    
+        function [B, G, R] = RGB2BGR(obj)
+            try
+                image = im2double(obj.Image);
+                R = image(:,:,1);
+                G = image(:,:,2);
+                B = image(:,:,3);
+            catch Er
+                disp("Error: " + Er.message);
+                B = []; G = []; R = [];
+            end
+        end
 
         %__ Flip
         % Funcția Flip inversează orientarea unei imagini, fie pe orizontală, 
