@@ -42,7 +42,6 @@ classdef ImageProcessing < handle
         
         function [H, S, V] = RGB2HSV(obj)
             try
-
                 image = im2double(obj.Image);
                 R = image(:,:,1);
                 G = image(:,:,2);
@@ -186,9 +185,6 @@ classdef ImageProcessing < handle
             end
         end
         
-        %__ Rotate
-        %Not Implemented
-        
         %__ Resizing
         %Not Implemented
 
@@ -246,6 +242,56 @@ classdef ImageProcessing < handle
             end
         end
         
+        %__ Rotating
+        % Funcția Rotate roteste imaginea, la un numar de grade 
+        % selectat (in sensul acelor de ceasornic).
+        
+        function Rotate(obj, degrees)
+            try
+                image = im2double(obj.Image);
+
+
+                [w, h, c] = size(image);
+
+                cx = round(h/2);
+                cy = round(w/2);
+
+
+                degrees = degrees * pi/180;
+                
+                M = [cos(degrees) -sin(degrees);
+                     sin(degrees) cos(degrees)];
+            
+                rotated_image = zeros(w, h, c);
+
+                for x = 1:h
+                    for y = 1:w
+                       coords = [x - cx; y - cy];
+                        
+                        coords_new = M * coords;
+
+
+                        x_new = round(coords_new(1) + cx);
+
+                        y_new = round(coords_new(2) + cy);
+
+                        
+                        if x_new > 0 && x_new <= h && ...
+                           y_new > 0 && y_new <= w
+                            
+                            rotated_image(y_new, x_new, :) = image(y, x, :);
+                            
+                        end
+                    end
+                end
+
+                
+                obj.Image = rotated_image;
+            catch Er
+                disp("Error: " + Er.message);
+            end
+        end
+
         %__ Crop
         %Not Implemented
 
@@ -383,6 +429,9 @@ classdef ImageProcessing < handle
         
         %__ Translation
         %Not Implemented
+        
+        %__ Filters
+        %Not Implemented
 
         %__ Edge Detection
         %____ Sobel
@@ -402,6 +451,8 @@ classdef ImageProcessing < handle
         %____ Square
         %____ Rectangle
         %Not Implemented
-
+ 
+        %__ CLAHE
+        %Not Implemented
     end
 end
