@@ -185,6 +185,42 @@ classdef ImageProcessing < handle
             end
         end
         
+        %__ Translation
+        % Funcția Translation mută conținutul imaginii la stânga/dreapta (pe axa X)
+        % și/sau în sus/jos (pe axa Y) cu un anumit „stride" (deplasare)
+        
+        function Translation(obj, stride)
+            try
+                image = im2double(obj.Image);
+                
+                [h, w, c] = size(image);
+                translation = zeros(h, w, c);
+                
+                if(stride(1) < 0)
+                    start_y = abs(stride(1)):h;
+                    dest_y = 1:(h + stride(1)+1);
+                else
+                    start_y = 1:(h - stride(1));
+                    dest_y = (1 + stride(1)):h;
+                end
+
+                if(stride(2) < 0)
+                    start_x = abs(stride(2)) : w;
+                    dest_x = 1:(w + stride(2)+1);
+                else
+                    start_x = 1:(w - stride(2));
+                    dest_x = (1 + stride(2)):w;
+                end
+
+                translation(dest_y, dest_x, :) = image(start_y, start_x, :);
+
+                obj.Image = translation;
+
+            catch Er
+                disp("Error: " + Er.message);
+            end
+        end
+
         %__ Resizing
         %Not Implemented
 
@@ -293,7 +329,41 @@ classdef ImageProcessing < handle
         end
 
         %__ Crop
-        %Not Implemented
+        % Funcția Crop primeste 2 puncte si "taie" un dreptunghi 
+        % din imagine, apoi inlocuieste imaginea cu rezultatul
+        
+        function Crop(obj, first_point, second_point)
+            try
+                [w, h, ~] = size(obj.Image);
+
+                if second_point(1) < first_point(1) 
+                    [second_point(1), first_point(1)] = deal(first_point(1), second_point(1));
+                end
+                
+                if second_point(2) < first_point(2) 
+                    [second_point(2), first_point(2)] = deal(first_point(2), second_point(2));
+                end
+                
+                if second_point(1) > w
+                    second_point(1) = w;
+                end
+
+                if second_point(2) > h
+                    second_point(2) = h;
+                end
+
+                if first_point(1) < 1 || first_point(2) < 1
+                    error("Values must be greater than 0");
+                end
+                
+                cropped = obj.Image(first_point(1):second_point(1), first_point(2): second_point(2), :);
+
+                obj.Image = cropped;
+
+            catch Er
+                disp("Error: " + Er.message);
+            end
+        end
 
         %__ Shape
         % Funcția Shape decupează o imagine conform unei 
