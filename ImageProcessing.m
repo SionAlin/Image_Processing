@@ -16,19 +16,18 @@ classdef ImageProcessing < handle
         %__ RGB to GrayScale
         % Funcția RGB2GrayScale transforma imaginea RGB
         % intr-o imagine alb-negru.
-        
         function new = RGB2GrayScale(obj)
             try
                 image = im2double(obj.Image);
                 R = image(:,:,1);
                 G = image(:,:,2);
                 B = image(:,:,3);
-    
+            
                 gamma = 1.04;
                 r_const =  0.2126;
                 g_const =  0.7152;
                 b_const =  0.0722;
-
+            
                 new.Image = (r_const * (R .^ gamma)) + (g_const * (G .^ gamma)) + (b_const * (B .^ gamma));
                 
             catch Er
@@ -222,18 +221,57 @@ classdef ImageProcessing < handle
         end
 
         %__ Resizing
-        %Not Implemented
+        % Funcția Resizing redimensioneaza imaginea la noile dimensiuni
+        % dorite, pastrand intregul continut al imaginii originale.
+
+        function Resizing(obj, new_h, new_w)
+            try
+                
+                image = im2double(obj.Image);
+                [h, w, c] = size(image);
+                
+                new = zeros(new_h, new_w, c);
+                for x = 1:new_h
+                    for y = 1:new_w
+                        
+                        x_old = round((x - 0.5) * (h / new_h) + 0.5);
+                        y_old = round((y - 0.5) * (w / new_w) + 0.5);
+                
+                        x_old = min(max(x_old, 1), h);
+                        y_old = min(max(y_old, 1), w);
+                
+                        for k = 1:c
+                            new(x,y,k) = image(x_old, y_old, k);
+                        end
+                
+                    end
+                end
+                
+                obj.Image = new;
+
+            catch Er
+                disp("Error: " + Er.message);
+            end
+        end
 
         %__ Scaling
-        %Not Implemented
-
-        %__ Interpolation
-        %____ Nearest
-        %____ Linear
-        %____ Cubic
-        %____ Area
-        %____ Lanczos4
-        %Not Implemented
+        % Mărește imaginea proporțional cu factorul "scale", prin interpolare.
+        
+        function Scaling(obj, scale, method)
+            switch method
+                case 'nearest'
+                    image = obj.Nearest(scale);
+                case 'linear'
+                    image = obj.Linear(scale);
+                case 'cubic'
+                    image = obj.Cubic(scale);
+                case 'lanczos4'
+                    image = obj.Lanczos4(scale);
+                otherwise
+                    error("Error: Unknown method!")
+            end
+            obj.Image = image;
+        end
 
         %__ Stacking
         % Funcția Stacking combină două imagini prin alăturare, 
@@ -497,9 +535,6 @@ classdef ImageProcessing < handle
         %__ Shearing
         %Not Implemented
         
-        %__ Translation
-        %Not Implemented
-        
         %__ Filters
         %Not Implemented
 
@@ -520,9 +555,257 @@ classdef ImageProcessing < handle
         %____ Circle
         %____ Square
         %____ Rectangle
+        %____ Text
         %Not Implemented
  
         %__ CLAHE
         %Not Implemented
+    end
+
+    methods (Access = private)
+        %__ Interpolation
+        % Determina cum valorile pixelilor sunt selectati, 
+        % cand dimensiunile imaginii sunt scazute sau crescute.
+
+        %____ Nearest
+        % Fiecarui pixel din imaginea redimensionata ii este atribuita
+        % valoarea celui mai apropiat pixel din imaginea originala
+
+        function new = Nearest(obj, scale)
+            try
+                image = im2double(obj.Image);
+                [h, w, c] = size(image);
+
+                size_new = [scale*h, scale*w, c];
+                new = zeros(size_new);
+
+                for x=1:h
+                    for y=1:w
+                        for k=1:c
+                            new(scale*x-(scale-1):scale*x, scale*y-(scale-1):scale*y, k) = image(x,y,k);
+                        end
+                    end
+                end
+                
+            catch Er
+                disp("Error: " + Er.message);
+            end
+        end
+
+        %____ Linear
+        % Foloseste media aritmetica a celor mai apropiati pixeli
+        % pentru a calcula valoare noului pixel
+
+        function new = Linear(obj, scale)
+            try
+                image = im2double(obj.Image);
+                [h, w, c] = size(image);
+
+                size_new = [scale*h, scale*w, c];
+                new = zeros(size_new);
+
+                for x = 1:size_new(1) 
+                    for y = 1:size_new(2)
+                        
+                        i = (x-1)/scale + 1;
+                        j = (y-1)/scale + 1;
+                
+                        i1 = floor(i);
+                        i2 = min(i1+1, h);
+                        j1 = floor(j);
+                        j2 = min(j1+1, w);
+                
+                        di = i - i1;
+                        dj = j - j1;
+                
+                        for k = 1:c
+                            L11 = image(i1,j1,k);
+                            L21 = image(i2,j1,k);
+                            L12 = image(i1,j2,k);
+                            L22 = image(i2,j2,k);
+                
+                            new(x,y,k) = (1-di)*(1-dj)*L11 + di*(1-dj)*L21 + (1-di)*dj*L12 + di*dj*L22;
+                        end
+                    end
+                end
+                
+            catch Er
+                disp("Error: " + Er.message);
+            end
+        end
+
+        %____ Cubic
+        % Folosim cei mai apropiati 16 pixeli pentru a calcula valoarea 
+        % noului pixel.
+
+        function new = Cubic(obj, scale)
+            
+            %Cubic kernel
+            function out = cubic_weight(x)
+                a = -0.5;
+                x = abs(x);
+                if x <= 1
+                    out = (a+2)*x^3 - (a+3)*x^2 + 1;
+                elseif x < 2
+                    out = a*x^3 - 5*a*x^2 + 8*a*x - 4*a;
+                else
+                    out = 0;
+                end
+            end
+
+            try
+                image = im2double(obj.Image);
+                [h, w, c] = size(image);
+
+                size_new = [scale*h, scale*w, c];
+                new = zeros(size_new);
+
+                for x = 1:size_new(1) 
+                    for y = 1:size_new(2)
+                        
+                        % coordonatele din imaginea originala
+                        i = (x-1)/scale + 1;
+                        j = (y-1)/scale + 1;
+                
+                        i1 = floor(i);
+                        j1 = floor(j);
+                
+                        di = i - i1;
+                        dj = j - j1;
+                
+                        for k = 1:c
+                            val = 0;
+                            total_w = 0;
+                            
+                            % vecinii pixelului 
+                            for m = -1:2
+                                for n = -1:2
+                                    im = min(max(i1 + m, 1), h);
+                                    jn = min(max(j1 + n, 1), w);
+                
+                                    wi = cubic_weight(m - di);
+                                    wj = cubic_weight(n - dj);
+                                    wtot = wi * wj;
+                
+                                    val = val + image(im, jn, k) * wtot;
+                                    total_w = total_w + wtot;
+                                end
+                            end
+                            if total_w ~= 0
+                                new(x,y,k) = val / total_w;
+                            end
+                        end
+                    end
+                end
+                
+            catch Er
+                disp("Error: " + Er.message);
+            end
+        end
+
+        %____ Area
+        % Impartim imaginea in blocuri de pixeli, apoi calculam
+        % media aritmetica a tuturor pixelilor din bloc, pentru a
+        % obtine un nou pixel
+        
+        function new = Area(obj, scale)
+            try
+                image = im2double(obj.Image);
+                [h, w, c] = size(image);
+
+                size_new = [round(scale*h), round(scale*w), c];
+                new = zeros(size_new);
+
+                block_h = h / size_new(1);
+                block_w = w / size_new(2);
+                
+                for x = 1:size_new(1) 
+                    for y = 1:size_new(2)
+                        start_x = floor((x-1) * block_h) + 1;
+                        end_x = min(floor(x * block_h), h);
+                
+                        start_y = floor((y-1) * block_w) + 1;
+                        end_y = min(floor(y * block_w), w);
+                
+                        for k = 1:c
+                            block = image(start_x:end_x, start_y:end_y, k);
+                            new(x,y,k) = mean(block(:));
+                        end
+                    end
+                end
+                
+            catch Er
+                disp("Error: " + Er.message);
+            end
+        end
+
+        %____ Lanczos4
+        % Folosește un kernel bazat pe funcția sinc trunchiat la ±4 pixeli,
+        % adică pentru fiecare pixel nou combină valorile unui pătrat 8×8 
+        % de vecini cu ponderi calculate prin sinc(x)*sinc(x/4).
+        
+        function new = Lanczos4(obj, scale)
+            function out = mySinc(x)
+                if x ~= 0
+                    out = sin(pi*x) ./ (pi*x);
+                else
+                    out = 1;
+                end
+            end
+            
+            function out = Lanczos(x)
+                if abs(x) < 4
+                    out = mySinc(x) .* mySinc(x/4);
+                else
+                    out = 0;
+                end
+            end
+
+            try
+
+                image = im2double(obj.Image);
+                [h, w, c] = size(image);
+                
+                size_new = [round(scale*h), round(scale*w), c];
+                new = zeros(size_new);
+                
+                for x = 1:size_new(1) 
+                    for y = 1:size_new(2)
+                        
+                        i = (x-0.5)/scale + 0.5;
+                        j = (y-0.5)/scale + 0.5;
+                
+                        i1 = floor(i);
+                        j1 = floor(j);
+                
+                        for k = 1:c
+                            val = 0;
+                            total_w = 0;
+                            
+                            for m = -3:4
+                                for n = -3:4
+                                    im = min(max(i1 + m, 1), h);
+                                    jn = min(max(j1 + n, 1), w);
+                
+                                    wi = Lanczos(i - (i1 + m));
+                                    wj = Lanczos(j - (j1 + n));
+                                    wtot = wi * wj;
+                
+                                    val = val + image(im, jn, k) * wtot;
+                                    total_w = total_w + wtot;
+                                end
+                            end
+                            if total_w ~= 0
+                                new(x,y,k) = val / total_w;
+                            end
+                        end
+                    end
+                end
+
+            catch Er
+                disp("Error: " + Er.message);
+            end
+        end
+
     end
 end
