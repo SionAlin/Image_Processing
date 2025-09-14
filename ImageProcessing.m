@@ -533,10 +533,72 @@ classdef ImageProcessing < handle
         end
 
         %__ Shearing
-        %Not Implemented
+        % Funcția Shearing aplica o transformare afina asupra imaginii,
+        % deplasand liniile orizontale sau verticale proportional cu
+        % pozitia lor.
         
+        function Shearing(obj, shearing_x_factor, shearing_y_factor)
+            try
+                image = im2double(obj.Image);
+                [h,w,c] = size(image);
+                M = [1 shearing_x_factor 0; 
+                    shearing_y_factor 1 0;
+                    0 0 1];
+                
+                new_h = round(w + abs(shearing_x_factor) * h);
+                new_w = round(h + abs(shearing_y_factor) * w);
+                new = zeros(new_h, new_w, c);
+                
+                for x=1:h
+                    for y=1:w
+                        old_coords = [x; y; 1];
+                        new_coords = M * old_coords;
+                
+                        x_new = round(new_coords(1));
+                        y_new = round(new_coords(2));
+                
+                        if x_new > 1 && x_new <= size(new, 1) && ...
+                           y_new > 1 && y_new <= size(new, 2)
+                        
+                            for k=1:c
+                                new(x_new, y_new, k) = image(x, y, k);
+                            end
+                        end
+                    end
+                end
+
+                obj.Image = new;
+
+            catch Er
+                disp("Error: " + Er.message);
+            end
+        end
+
         %__ Filters
-        %Not Implemented
+        % Filtrele in procesarea imaginilor sunt metode care modifica
+        % pixelii unei imagini pentru a evidentia sau reduce anumite
+        % caracteristici, cum ar fi marginile, zgomotul sau textura.
+
+        function Filters(obj, method)
+            try
+                if isstring(method) || ischar(method)
+                    switch method
+                        case 'Average'
+                            obj.Image = obj.Average();
+                        case 'Gaussian'
+                            obj.Image = obj.Gaussian();
+                        case 'Median'
+                            obj.Image = obj.Median();
+                        otherwise
+                            error("Unknown method!")
+                    end
+                else
+                    obj.Image = obj.Custom(method);
+                end
+            catch Er
+                disp("Error: " + Er.message);
+            end
+        end
 
         %__ Edge Detection
         %____ Sobel
@@ -798,6 +860,123 @@ classdef ImageProcessing < handle
                             if total_w ~= 0
                                 new(x,y,k) = val / total_w;
                             end
+                        end
+                    end
+                end
+
+            catch Er
+                disp("Error: " + Er.message);
+            end
+        end
+        
+        %__ Filters
+        % Filtrele in procesarea imaginilor sunt metode care modifica
+        % pixelii unei imagini pentru a evidentia sau reduce anumite
+        % caracteristici, cum ar fi marginile, zgomotul sau textura.
+
+        %____ Average Blur
+        % Inlocuieste fiecare pixel cu media aritmetica a vecinilor lui.
+
+        function new = Average(obj)
+            try
+                image = im2double(obj.Image);
+                [h, w, c] = size(image);
+                
+                new = zeros(h, w, c);
+                
+                for x = 2:(h-1)
+                    for y = 2:(w-1)
+                        for k = 1:c
+                            block = image((x-1):(x+1),(y-1):(y+1), k);
+                            new_pixel = (sum(sum(block))) / 9;
+                            new(x,y,k) = new_pixel;
+                        end
+                    end
+                end
+            catch Er
+                disp("Error: " + Er.message);
+            end
+        end
+
+        %____ Gaussian Blur
+        % Inlocuieste fiecare pixel cu o medie ponderata a vecinilor,
+        % folosind o distributie Gaussiana.
+
+        function new = Gaussian(obj)
+            try
+                image = im2double(obj.Image);
+                [h, w, c] = size(image);
+                
+                new = zeros(h, w, c);
+                
+                G = [1 2 1;
+                     2 4 2;
+                     1 2 1]; 
+                
+                G = G / sum(G(:));
+                
+                for x = 2:(h-1)
+                    for y = 2:(w-1)
+                        for k = 1:c
+                            block = image((x-1):(x+1),(y-1):(y+1), k);
+                            new_pixel = sum(sum(block .* G));
+                            new(x,y,k) = new_pixel;
+                        end
+                    end
+                end
+
+            catch Er
+                disp("Error: " + Er.message);
+            end
+        end
+
+        %____ Median Blur
+        % Inlocuieste fiecare pixel cu valoarea mediana a vecinilor.
+
+        function new = Median(obj)
+            try
+                image = im2double(obj.Image);
+                [h, w, c] = size(image);
+                
+                new = zeros(h, w, c);
+                
+                for x = 2:(h-1)
+                    for y = 2:(w-1)
+                        for k = 1:c
+                            block = image((x-1):(x+1),(y-1):(y+1), k);
+                            new_pixel = median(block);
+                            new(x,y,k) = new_pixel;
+                        end
+                    end
+                end
+
+            catch Er
+                disp("Error: " + Er.message);
+            end
+        end
+        
+        %____ Custom
+        % Aceasta functie aplica un filtru personalizat pe imagine, unde
+        % fiecare pixel este recalculat ca suma ponderata a vecinilor sai
+        % conform unei matrice de NxM definite.
+        
+        function new = Custom(obj, custom_filter)
+            try
+                image = im2double(obj.Image);
+                [h, w, c] = size(image);
+                
+                [n, m] = size(custom_filter);
+                pad_h = floor(n/2);
+                pad_w = floor(m/2);
+
+                new = zeros(h, w, c);
+                
+                for x = (1 + pad_h):(h - pad_h)
+                    for y = (1 + pad_w):(w - pad_w)
+                        for k = 1:c
+                            block = image((x - pad_h):(x + pad_h),(y - pad_w):(y + pad_w), k);
+                            new_pixel = sum(sum(block .* custom_filter));
+                            new(x,y,k) = new_pixel;
                         end
                     end
                 end
