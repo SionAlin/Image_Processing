@@ -590,7 +590,7 @@ classdef ImageProcessing < handle
                         case 'Median'
                             obj.Image = obj.Median();
                         otherwise
-                            error("Unknown method!")
+                            error("Unknown method!");
                     end
                 else
                     obj.Image = obj.Custom(method);
@@ -601,10 +601,30 @@ classdef ImageProcessing < handle
         end
 
         %__ Edge Detection
-        %____ Sobel
-        %____ Canny
-        %____ Laplacian
-        %Not Implemented
+        % Reprezinta schimbarile bruste in intensitate sau culoare intr-o imagine.
+
+        function new = Edge_Detection(obj, method)
+            try
+                if isstring(method) || ischar(method)
+                    switch method
+                        case 'Sobel'
+                            new = obj.Sobel();
+                        case 'Canny'
+                            new = obj.Canny();
+                        case 'Laplacian4'
+                            new = obj.Laplacian('L4');
+                        case 'Laplacian8'
+                            new = obj.Laplacian('L8');
+                        otherwise
+                            error("Unknown method!");
+                    end
+                else
+                    error("'method' must be a string!");
+                end
+            catch Er
+                disp("Error: " + Er.message);
+            end
+        end
 
         %__ Histogram
         %Not Implemented
@@ -624,7 +644,7 @@ classdef ImageProcessing < handle
         %Not Implemented
     end
 
-    methods (Access = private)
+    methods (Access = public)
         %__ Interpolation
         % Determina cum valorile pixelilor sunt selectati, 
         % cand dimensiunile imaginii sunt scazute sau crescute.
@@ -981,6 +1001,176 @@ classdef ImageProcessing < handle
                     end
                 end
 
+            catch Er
+                disp("Error: " + Er.message);
+            end
+        end
+        
+        %__ Edge Detection
+        % Reprezinta schimbarile bruste in intensitate sau culoare intr-o imagine. 
+
+        %____ Sobel
+        % Functia Sobel detecteaza marginile orizontale si verticale,
+        % calculand gradientul.
+
+        function new = Sobel(obj)
+            try
+                image_gray = obj.RGB2GrayScale();
+                image_gray = image_gray.Image;
+
+                [h, w, ~] = size(image_gray);
+                new_h = zeros(h, w);
+                new_v = zeros(h, w);
+
+                Gx = [-1 0 1; 
+                      -2 0 2; 
+                      -1 0 1];
+                
+                Gy = [-1 -2 -1;
+                       0  0  0;
+                       1  2  1];
+
+                for x = 2:(h-1)
+                    for y = 2:(w-1)
+                        block = image_gray((x-1):(x+1), (y-1):(y+1));
+                        new_h(x,y) = sum(sum(double(block) .* Gx));
+                        new_v(x,y) = sum(sum(double(block) .* Gy));
+                    end
+                end
+
+                magnitude = sqrt(new_h.^2 + new_v.^2);
+                magnitude = magnitude / max(magnitude(:));
+
+                new = magnitude;
+
+            catch Er
+                disp("Error: " + Er.message);
+            end
+        end
+
+        %____ Canny
+        % Detecteaza marginile combinand algoritmul Sobel si binarizare pe
+        % baza de prag.
+    
+        function new = Canny(obj)
+            try
+                image = obj;
+
+                %1. Aplicam Gaussian Blur
+                image.Filters('Gaussian');
+
+                %2. Transformam imaginea in RGB
+                image = image.RGB2GrayScale();
+
+                %3. Aplicam Sobel
+                [h, w, ~] = size(image.Image);
+                new_h = zeros(h, w);
+                new_v = zeros(h, w);
+                
+                Gx = [-1 0 1; 
+                      -2 0 2; 
+                      -1 0 1];
+                
+                Gy = [-1 -2 -1;
+                       0  0  0;
+                       1  2  1];
+                
+                for x = 2:(h-1)
+                    for y = 2:(w-1)
+                        block = image.Image((x-1):(x+1), (y-1):(y+1));
+                        new_h(x,y) = sum(sum(double(block) .* Gx));
+                        new_v(x,y) = sum(sum(double(block) .* Gy));
+                    end
+                end
+
+                magnitude = sqrt(new_h.^2 + new_v.^2);
+                
+                %4. Subtiem marginile
+                tetha_rad = atan2(new_v, new_h);
+                tetha_deg = tetha_rad * (180/pi);
+                
+                tetha_deg(tetha_deg < 0) = tetha_deg(tetha_deg < 0) + 100;
+                
+                nms = zeros(h, w);
+
+                for i = 2:(h-1)
+                    for j = 2:(w-1)
+                        angle = tetha_deg(i, j);
+                        mag = magnitude(i, j);
+                
+                        if ((angle >= 0 && angle < 22.5) || (angle >= 157.5 && angle <= 180))
+                            neighbors = [magnitude(i, j-1), magnitude(i,j+1)];
+                        elseif (angle >= 22.5 && angle < 67.5)
+                            neighbors = [magnitude(i-1, j+1), magnitude(i+1,j-1)];
+                        elseif (angle >= 67.5 && angle < 112.5)
+                            neighbors = [magnitude(i-1, j), magnitude(i+1,j)];
+                        else
+                            neighbors = [magnitude(i-1, j-1), magnitude(i+1,j+1)];
+                        end
+                
+                        if mag >= max(neighbors)
+                            nms(i,j) = mag;
+                        else
+                            nms(i,j) = 0;
+                        end
+                    end
+                end
+                
+                %5. Detectam marginile
+                highThreshold = 0.2 * max(nms(:));
+                lowThreshold = 0.1 * max(nms(:));
+                
+                edge = zeros(h, w);
+                
+                strong = nms >= highThreshold;
+                weak = (nms >= lowThreshold) & (nms < highThreshold);
+                
+                edge(strong) = 1;
+                
+                for i = 2:(h-1)
+                    for j = 2:(w-1)
+                        if weak(i,j)
+                            if any(any(strong(i-1:i+1, j-1:j+1)))
+                                edge(i,j) = 1;
+                            end
+                        end
+                    end
+                end
+                
+                new = edge;
+
+            catch Er
+                disp("Error: " + Er.message);
+            end
+        end
+
+        %____ Laplacian
+        % Functia Laplacian detecteaza marginile cautand regiunile cu
+        % schimbari rapide.
+        
+        function new = Laplacian(obj, method)
+            try
+                image_gray = obj.RGB2GrayScale();
+                image_gray = image_gray.Image;
+
+                [h, w, ~] = size(image_gray);
+                new = zeros(h, w);
+                
+                if method == "L4"
+                    L = [0 1 0; 1 -4 1; 0 1 0];
+                elseif method == "L8"
+                    L = [1 1 1; 1 -8 1; 1 1 1];
+                else
+                    error("Unknown method!");
+                end
+
+                for x = 2:(h-1)
+                    for y = 2:(w-1)
+                        block = image_gray((x-1):(x+1), (y-1):(y+1));
+                        new(x,y) = sum(sum(double(block) .* L));
+                    end
+                end
+                
             catch Er
                 disp("Error: " + Er.message);
             end
