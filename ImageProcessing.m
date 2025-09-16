@@ -627,24 +627,87 @@ classdef ImageProcessing < handle
         end
 
         %__ Histogram
-        %Not Implemented
+        % Reprezinta grafic distributia intensitatilor pixelilor din acea
+        % imagine.
+
+        function [x,y] = Histogram(obj)
+            try
+                [h, w, ~] = size(obj.Image);
+                x = 0:255;
+                y = zeros([1,256]);
+
+                for i = 1:h
+                    for j = 1:w
+                        y(obj.Image(i,j,1) + 1) = 1 + y(obj.Image(i,j,1) + 1);
+                        y(obj.Image(i,j,2) + 1) = 1 + y(obj.Image(i,j,2) + 1);
+                        y(obj.Image(i,j,3) + 1) = 1 + y(obj.Image(i,j,3) + 1);
+                    end
+                end
+
+                %bar(x,y);
+                %xlabel('Pixel Intensity');
+                %ylabel('Frequency');
+                %title('Image Histogram');
+
+            catch Er
+                disp("Error: " + Er.message);
+            end
+        end
 
         %__ Histogram Equalization
-        %Not Implemented
+        % Este o tehnica de redistributie a contrastului in imagine.
 
-        %__ Draw
-        %____ Line
-        %____ Circle
-        %____ Square
-        %____ Rectangle
-        %____ Text
-        %Not Implemented
- 
-        %__ CLAHE
-        %Not Implemented
+        function Histogram_Equalization(obj)
+            try
+                [h, w, c] = size(obj.Image);
+                new = zeros(h,w,c, "uint8");
+
+                [~, y] = obj.Histogram();
+
+                y_R = y(1:3:end);
+                y_G = y(2:3:end);
+                y_B = y(3:3:end);
+
+                CDF_R = cumsum(y_R) / sum(y_R);
+                CDF_G = cumsum(y_G) / sum(y_G);
+                CDF_B = cumsum(y_B) / sum(y_B);
+
+                CDF_R_scaled = uint8(255 * CDF_R);
+                CDF_G_scaled = uint8(255 * CDF_G);
+                CDF_B_scaled = uint8(255 * CDF_B);
+
+                R_index = min(floor(double(obj.Image(:,:,1)) / 3) + 1, 85);
+                G_index = min(floor(double(obj.Image(:,:,2)) / 3) + 1, 85);
+                B_index = min(floor(double(obj.Image(:,:,3)) / 3) + 1, 85);
+
+                new(:,:,1) = CDF_R_scaled(R_index);
+                new(:,:,2) = CDF_G_scaled(G_index);
+                new(:,:,3) = CDF_B_scaled(B_index);
+
+                obj.Image = new;
+            catch Er
+                disp("Error: " + Er.message);
+            end
+        end
+
+        %____ Draw Line
+        % Deseneaza o linie pe imagine
+
+        
+
+        %____ Draw Circle
+        % Deseneaza un cerc pe imagine
+
+
+
+        %____ Draw Rectangle
+        % Deseneaza un patrulater pe imagine
+
+        
+
     end
 
-    methods (Access = public)
+    methods (Access = private)
         %__ Interpolation
         % Determina cum valorile pixelilor sunt selectati, 
         % cand dimensiunile imaginii sunt scazute sau crescute.
