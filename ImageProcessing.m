@@ -690,20 +690,59 @@ classdef ImageProcessing < handle
             end
         end
 
-        %____ Draw Line
-        % Deseneaza o linie pe imagine
-
-        
-
-        %____ Draw Circle
-        % Deseneaza un cerc pe imagine
-
-
-
-        %____ Draw Rectangle
+         %____ Draw Rectangle
         % Deseneaza un patrulater pe imagine
 
-        
+        function Draw_Rectangle(obj, first_point, second_point, thikness, color, fill)
+            try
+                [h, w, c] = size(obj.Image);
+                
+
+                if second_point(1) < first_point(1) 
+                    [second_point(1), first_point(1)] = deal(first_point(1), second_point(1));
+                end
+                
+                if second_point(2) < first_point(2) 
+                    [second_point(2), first_point(2)] = deal(first_point(2), second_point(2));
+                end
+                
+                if second_point(1) > w
+                    second_point(1) = w;
+                end
+
+                if second_point(2) > h
+                    second_point(2) = h;
+                end
+
+                if first_point(1) < 1 || first_point(2) < 1
+                    error("Values must be greater than 0");
+                end
+
+                if color(1) == 0
+                    color(1) = 1;
+                elseif color(2) == 0
+                    color(2) = 1;
+                elseif color(3) == 0
+                    color(3) = 1;
+                end
+                
+                mask_image = zeros(h, w, c, "uint8");
+
+                for k = 1:c
+                    mask_image(first_point(1):second_point(1), first_point(2):second_point(2), k) = color(k);
+                    if fill ~= true
+                        mask_image(first_point(1)+thikness:second_point(1)-thikness, first_point(2)+thikness:second_point(2)-thikness, k) = 0;
+                    end
+                    
+                end
+                
+                mask = mask_image ~= 0;
+                obj.Image(mask) = mask_image(mask);
+
+            catch Er
+                disp("Error: " + Er.message);
+            end
+        end
 
     end
 
