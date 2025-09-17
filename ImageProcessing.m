@@ -1,13 +1,16 @@
 classdef ImageProcessing < handle
   
-    properties
+    properties(Access = private)
         Image
     end
 
-    methods
+    methods(Access = public)
+
         function obj = ImageProcessing(inputImage)
             if(ischar(inputImage) || isstring(inputImage)) && isfile(inputImage)
                 obj.Image = imread(inputImage);
+            elseif isnumeric(inputImage) && (ndims(inputImage) == 3 && size(inputImage, 3) == 3)
+                obj.Image = inputImage;
             else
                 error("Unsupported input type");
             end
@@ -690,7 +693,7 @@ classdef ImageProcessing < handle
             end
         end
 
-         %____ Draw Rectangle
+        %____ Draw Rectangle
         % Deseneaza un patrulater pe imagine
 
         function Draw_Rectangle(obj, first_point, second_point, thikness, color, fill)
@@ -742,6 +745,13 @@ classdef ImageProcessing < handle
             catch Er
                 disp("Error: " + Er.message);
             end
+        end
+
+
+        %__ Display Image
+            
+        function Display_Image(obj)
+            imshow(obj.Image);
         end
 
     end
