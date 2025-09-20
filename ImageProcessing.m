@@ -19,7 +19,7 @@ classdef ImageProcessing < handle
         %__ RGB to GrayScale
         % Funcția RGB2GrayScale transforma imaginea RGB
         % intr-o imagine alb-negru.
-        function new = RGB2GrayScale(obj)
+        function RGB2GrayScale(obj)
             try
                 image = im2double(obj.Image);
                 R = image(:,:,1);
@@ -31,8 +31,9 @@ classdef ImageProcessing < handle
                 g_const =  0.7152;
                 b_const =  0.0722;
             
-                new.Image = (r_const * (R .^ gamma)) + (g_const * (G .^ gamma)) + (b_const * (B .^ gamma));
+                new = (r_const * (R .^ gamma)) + (g_const * (G .^ gamma)) + (b_const * (B .^ gamma));
                 
+                obj.Image = new;
             catch Er
                 disp("Error: " + Er.message);
             end
@@ -753,9 +754,22 @@ classdef ImageProcessing < handle
         function Display_Image(obj)
             imshow(obj.Image);
         end
+        
+        %__ Save Image
+
+        function Save_Image(obj, path)
+            imwrite(obj.Image, path);
+        end
+        
+        %__ Layers
+
+        function out = Layers(obj)
+            [~, ~, c] = size(obj.Image);
+            out = c;
+        end
 
     end
-
+        
     methods (Access = private)
         %__ Interpolation
         % Determina cum valorile pixelilor sunt selectati, 
@@ -1121,7 +1135,7 @@ classdef ImageProcessing < handle
         %__ Edge Detection
         % Reprezinta schimbarile bruste in intensitate sau culoare intr-o imagine. 
 
-        %____ Sobel
+        %____ Sobel (fix required)
         % Functia Sobel detecteaza marginile orizontale si verticale,
         % calculand gradientul.
 
@@ -1160,7 +1174,7 @@ classdef ImageProcessing < handle
             end
         end
 
-        %____ Canny
+        %____ Canny (fix required)
         % Detecteaza marginile combinand algoritmul Sobel si binarizare pe
         % baza de prag.
     
@@ -1256,7 +1270,7 @@ classdef ImageProcessing < handle
             end
         end
 
-        %____ Laplacian
+        %____ Laplacian (fix required)
         % Functia Laplacian detecteaza marginile cautand regiunile cu
         % schimbari rapide.
         
