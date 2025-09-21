@@ -1028,14 +1028,24 @@ classdef ImageProcessing < handle
                 image = im2double(obj.Image);
                 [h, w, c] = size(image);
                 
-                new = zeros(h, w, c);
+                if c == 1
+                    new = zeros(h, w);
+                else
+                    new = zeros(h, w, c);
+                end
                 
                 for x = 2:(h-1)
                     for y = 2:(w-1)
-                        for k = 1:c
-                            block = image((x-1):(x+1),(y-1):(y+1), k);
+                        if c == 1
+                            block = image((x-1):(x+1),(y-1):(y+1));
                             new_pixel = (sum(sum(block))) / 9;
-                            new(x,y,k) = new_pixel;
+                            new(x,y) = new_pixel;
+                        else
+                            for k = 1:c
+                                block = image((x-1):(x+1),(y-1):(y+1), k);
+                                new_pixel = (sum(sum(block))) / 9;
+                                new(x,y,k) = new_pixel;
+                            end
                         end
                     end
                 end
@@ -1053,7 +1063,11 @@ classdef ImageProcessing < handle
                 image = im2double(obj.Image);
                 [h, w, c] = size(image);
                 
-                new = zeros(h, w, c);
+                if c == 1
+                    new = zeros(h, w);
+                else
+                    new = zeros(h, w, c);
+                end
                 
                 G = [1 2 1;
                      2 4 2;
@@ -1063,11 +1077,18 @@ classdef ImageProcessing < handle
                 
                 for x = 2:(h-1)
                     for y = 2:(w-1)
-                        for k = 1:c
-                            block = image((x-1):(x+1),(y-1):(y+1), k);
+                        if c == 1
+                            block = image((x-1):(x+1),(y-1):(y+1));
                             new_pixel = sum(sum(block .* G));
-                            new(x,y,k) = new_pixel;
+                            new(x,y) = new_pixel;
+                        else
+                            for k = 1:c
+                                block = image((x-1):(x+1),(y-1):(y+1), k);
+                                new_pixel = sum(sum(block .* G));
+                                new(x,y,k) = new_pixel;
+                            end
                         end
+
                     end
                 end
 
@@ -1084,14 +1105,24 @@ classdef ImageProcessing < handle
                 image = im2double(obj.Image);
                 [h, w, c] = size(image);
                 
-                new = zeros(h, w, c);
+                if c == 1
+                    new = zeros(h, w);
+                else
+                    new = zeros(h, w, c);
+                end
                 
                 for x = 2:(h-1)
                     for y = 2:(w-1)
-                        for k = 1:c
-                            block = image((x-1):(x+1),(y-1):(y+1), k);
-                            new_pixel = median(block);
-                            new(x,y,k) = new_pixel;
+                        if c == 1
+                            block = image((x-1):(x+1),(y-1):(y+1));
+                                new_pixel = median(block);
+                                new(x,y) = new_pixel;
+                        else
+                            for k = 1:c
+                                block = image((x-1):(x+1),(y-1):(y+1), k);
+                                new_pixel = median(block);
+                                new(x,y,k) = new_pixel;
+                            end
                         end
                     end
                 end
@@ -1115,14 +1146,24 @@ classdef ImageProcessing < handle
                 pad_h = floor(n/2);
                 pad_w = floor(m/2);
 
-                new = zeros(h, w, c);
+                if c == 1
+                    new = zeros(h, w);
+                else
+                    new = zeros(h, w, c);
+                end
                 
                 for x = (1 + pad_h):(h - pad_h)
                     for y = (1 + pad_w):(w - pad_w)
-                        for k = 1:c
-                            block = image((x - pad_h):(x + pad_h),(y - pad_w):(y + pad_w), k);
+                        if c == 1
+                            block = image((x - pad_h):(x + pad_h),(y - pad_w):(y + pad_w));
                             new_pixel = sum(sum(block .* custom_filter));
-                            new(x,y,k) = new_pixel;
+                            new(x,y) = new_pixel;
+                        else
+                            for k = 1:c
+                                block = image((x - pad_h):(x + pad_h),(y - pad_w):(y + pad_w), k);
+                                new_pixel = sum(sum(block .* custom_filter));
+                                new(x,y,k) = new_pixel;
+                            end
                         end
                     end
                 end
@@ -1135,16 +1176,17 @@ classdef ImageProcessing < handle
         %__ Edge Detection
         % Reprezinta schimbarile bruste in intensitate sau culoare intr-o imagine. 
 
-        %____ Sobel (fix required)
+        %____ Sobel
         % Functia Sobel detecteaza marginile orizontale si verticale,
         % calculand gradientul.
 
         function new = Sobel(obj)
             try
-                image_gray = obj.RGB2GrayScale();
-                image_gray = image_gray.Image;
+                if obj.Layers() == 3
+                    obj.RGB2GrayScale();
+                end
 
-                [h, w, ~] = size(image_gray);
+                [h, w] = size(obj.Image);
                 new_h = zeros(h, w);
                 new_v = zeros(h, w);
 
@@ -1158,7 +1200,7 @@ classdef ImageProcessing < handle
 
                 for x = 2:(h-1)
                     for y = 2:(w-1)
-                        block = image_gray((x-1):(x+1), (y-1):(y+1));
+                        block = obj.Image((x-1):(x+1), (y-1):(y+1));
                         new_h(x,y) = sum(sum(double(block) .* Gx));
                         new_v(x,y) = sum(sum(double(block) .* Gy));
                     end
@@ -1174,22 +1216,23 @@ classdef ImageProcessing < handle
             end
         end
 
-        %____ Canny (fix required)
+        %____ Canny
         % Detecteaza marginile combinand algoritmul Sobel si binarizare pe
         % baza de prag.
     
         function new = Canny(obj)
             try
-                image = obj;
+                
+                %1. Transformam imaginea in alb-negru daca e nevoie
+                if obj.Layers() == 3
+                    obj.RGB2GrayScale();
+                end
 
-                %1. Aplicam Gaussian Blur
-                image.Filters('Gaussian');
-
-                %2. Transformam imaginea in RGB
-                image = image.RGB2GrayScale();
-
+                %2. Aplicam Gaussian Blur
+                obj.Filters('Gaussian');
+            
                 %3. Aplicam Sobel
-                [h, w, ~] = size(image.Image);
+                [h, w] = size(obj.Image);
                 new_h = zeros(h, w);
                 new_v = zeros(h, w);
                 
@@ -1203,7 +1246,7 @@ classdef ImageProcessing < handle
                 
                 for x = 2:(h-1)
                     for y = 2:(w-1)
-                        block = image.Image((x-1):(x+1), (y-1):(y+1));
+                        block = obj.Image((x-1):(x+1), (y-1):(y+1));
                         new_h(x,y) = sum(sum(double(block) .* Gx));
                         new_v(x,y) = sum(sum(double(block) .* Gy));
                     end
@@ -1270,16 +1313,17 @@ classdef ImageProcessing < handle
             end
         end
 
-        %____ Laplacian (fix required)
+        %____ Laplacian
         % Functia Laplacian detecteaza marginile cautand regiunile cu
         % schimbari rapide.
         
         function new = Laplacian(obj, method)
             try
-                image_gray = obj.RGB2GrayScale();
-                image_gray = image_gray.Image;
+                if obj.Layers() == 3
+                    obj.RGB2GrayScale();
+                end
 
-                [h, w, ~] = size(image_gray);
+                [h, w] = size(obj.Image);
                 new = zeros(h, w);
                 
                 if method == "L4"
@@ -1292,7 +1336,7 @@ classdef ImageProcessing < handle
 
                 for x = 2:(h-1)
                     for y = 2:(w-1)
-                        block = image_gray((x-1):(x+1), (y-1):(y+1));
+                        block = obj.Image((x-1):(x+1), (y-1):(y+1));
                         new(x,y) = sum(sum(double(block) .* L));
                     end
                 end
