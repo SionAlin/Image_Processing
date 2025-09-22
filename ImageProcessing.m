@@ -180,9 +180,17 @@ classdef ImageProcessing < handle
         function Flip(obj, Direction)
             switch lower(Direction)
                 case "horizontal"
-                    obj.Image = obj.Image(1:end, end:-1:1, 1:3);
+                    if obj.Layers() == 1
+                        obj.Image = obj.Image(1:end, end:-1:1);
+                    else
+                        obj.Image = obj.Image(1:end, end:-1:1, 1:3);
+                    end
                 case "vertical"
-                    obj.Image = obj.Image(end:-1:1, 1:end, 1:3);
+                    if obj.Layers() == 1
+                        obj.Image = obj.Image(end:-1:1, 1:end);
+                    else
+                        obj.Image = obj.Image(end:-1:1, 1:end, 1:3);
+                    end
                 otherwise
                     error("Direction can be 'horizontal' or 'vertical'")
             end
@@ -269,6 +277,8 @@ classdef ImageProcessing < handle
                     image = obj.Linear(scale);
                 case 'cubic'
                     image = obj.Cubic(scale);
+                case 'area'
+                    image = obj.Area(scale);
                 case 'lanczos4'
                     image = obj.Lanczos4(scale);
                 otherwise
@@ -551,8 +561,13 @@ classdef ImageProcessing < handle
                 
                 new_h = round(w + abs(shearing_x_factor) * h);
                 new_w = round(h + abs(shearing_y_factor) * w);
-                new = zeros(new_h, new_w, c);
-                
+
+                if c == 1
+                    new = zeros(new_h, new_w);
+                else
+                    new = zeros(new_h, new_w, c);
+                end
+
                 for x=1:h
                     for y=1:w
                         old_coords = [x; y; 1];
@@ -563,9 +578,13 @@ classdef ImageProcessing < handle
                 
                         if x_new > 1 && x_new <= size(new, 1) && ...
                            y_new > 1 && y_new <= size(new, 2)
-                        
-                            for k=1:c
-                                new(x_new, y_new, k) = image(x, y, k);
+                            
+                            if c == 1
+                                new(x_new, y_new) = image(x, y);
+                            else
+                                for k=1:c
+                                    new(x_new, y_new, k) = image(x, y, k);
+                                end
                             end
                         end
                     end
@@ -648,10 +667,10 @@ classdef ImageProcessing < handle
                     end
                 end
 
-                %bar(x,y);
-                %xlabel('Pixel Intensity');
-                %ylabel('Frequency');
-                %title('Image Histogram');
+                bar(x,y);
+                xlabel('Pixel Intensity');
+                ylabel('Frequency');
+                title('Image Histogram');
 
             catch Er
                 disp("Error: " + Er.message);
@@ -783,14 +802,23 @@ classdef ImageProcessing < handle
             try
                 image = im2double(obj.Image);
                 [h, w, c] = size(image);
+                
+                if c == 1
+                    size_new = [scale*h, scale*w];
+                else
+                    size_new = [scale*h, scale*w, c];
+                end
 
-                size_new = [scale*h, scale*w, c];
                 new = zeros(size_new);
 
                 for x=1:h
                     for y=1:w
-                        for k=1:c
-                            new(scale*x-(scale-1):scale*x, scale*y-(scale-1):scale*y, k) = image(x,y,k);
+                        if c == 1
+                            new(scale*x-(scale-1):scale*x, scale*y-(scale-1):scale*y) = image(x,y);
+                        else
+                            for k=1:c
+                                new(scale*x-(scale-1):scale*x, scale*y-(scale-1):scale*y, k) = image(x,y,k);
+                            end
                         end
                     end
                 end
@@ -808,8 +836,13 @@ classdef ImageProcessing < handle
             try
                 image = im2double(obj.Image);
                 [h, w, c] = size(image);
+                
+                if c == 1
+                    size_new = [scale*h, scale*w];
+                else
+                    size_new = [scale*h, scale*w, c];
+                end
 
-                size_new = [scale*h, scale*w, c];
                 new = zeros(size_new);
 
                 for x = 1:size_new(1) 
@@ -825,14 +858,23 @@ classdef ImageProcessing < handle
                 
                         di = i - i1;
                         dj = j - j1;
+                        
+                        if c == 1
+                            L11 = image(i1,j1);
+                            L21 = image(i2,j1);
+                            L12 = image(i1,j2);
+                            L22 = image(i2,j2);
                 
-                        for k = 1:c
-                            L11 = image(i1,j1,k);
-                            L21 = image(i2,j1,k);
-                            L12 = image(i1,j2,k);
-                            L22 = image(i2,j2,k);
-                
-                            new(x,y,k) = (1-di)*(1-dj)*L11 + di*(1-dj)*L21 + (1-di)*dj*L12 + di*dj*L22;
+                            new(x,y) = (1-di)*(1-dj)*L11 + di*(1-dj)*L21 + (1-di)*dj*L12 + di*dj*L22;
+                        else
+                            for k = 1:c
+                                L11 = image(i1,j1,k);
+                                L21 = image(i2,j1,k);
+                                L12 = image(i1,j2,k);
+                                L22 = image(i2,j2,k);
+                    
+                                new(x,y,k) = (1-di)*(1-dj)*L11 + di*(1-dj)*L21 + (1-di)*dj*L12 + di*dj*L22;
+                            end
                         end
                     end
                 end
@@ -864,8 +906,13 @@ classdef ImageProcessing < handle
             try
                 image = im2double(obj.Image);
                 [h, w, c] = size(image);
+                
+                if c == 1
+                    size_new = [scale*h, scale*w];
+                else
+                    size_new = [scale*h, scale*w, c];
+                end
 
-                size_new = [scale*h, scale*w, c];
                 new = zeros(size_new);
 
                 for x = 1:size_new(1) 
@@ -880,8 +927,8 @@ classdef ImageProcessing < handle
                 
                         di = i - i1;
                         dj = j - j1;
-                
-                        for k = 1:c
+                        
+                        if c == 1
                             val = 0;
                             total_w = 0;
                             
@@ -895,12 +942,35 @@ classdef ImageProcessing < handle
                                     wj = cubic_weight(n - dj);
                                     wtot = wi * wj;
                 
-                                    val = val + image(im, jn, k) * wtot;
+                                    val = val + image(im, jn) * wtot;
                                     total_w = total_w + wtot;
                                 end
                             end
                             if total_w ~= 0
-                                new(x,y,k) = val / total_w;
+                                new(x,y) = val / total_w;
+                            end
+                        else
+                            for k = 1:c
+                                val = 0;
+                                total_w = 0;
+                                
+                                % vecinii pixelului 
+                                for m = -1:2
+                                    for n = -1:2
+                                        im = min(max(i1 + m, 1), h);
+                                        jn = min(max(j1 + n, 1), w);
+                    
+                                        wi = cubic_weight(m - di);
+                                        wj = cubic_weight(n - dj);
+                                        wtot = wi * wj;
+                    
+                                        val = val + image(im, jn, k) * wtot;
+                                        total_w = total_w + wtot;
+                                    end
+                                end
+                                if total_w ~= 0
+                                    new(x,y,k) = val / total_w;
+                                end
                             end
                         end
                     end
@@ -920,8 +990,13 @@ classdef ImageProcessing < handle
             try
                 image = im2double(obj.Image);
                 [h, w, c] = size(image);
+                
+                if c == 1
+                    size_new = [round(scale*h), round(scale*w)];
+                else
+                    size_new = [round(scale*h), round(scale*w), c];
+                end
 
-                size_new = [round(scale*h), round(scale*w), c];
                 new = zeros(size_new);
 
                 block_h = h / size_new(1);
@@ -934,10 +1009,14 @@ classdef ImageProcessing < handle
                 
                         start_y = floor((y-1) * block_w) + 1;
                         end_y = min(floor(y * block_w), w);
-                
-                        for k = 1:c
-                            block = image(start_x:end_x, start_y:end_y, k);
-                            new(x,y,k) = mean(block(:));
+                        if c == 1
+                            block = image(start_x:end_x, start_y:end_y);
+                            new(x,y) = mean(block(:));
+                        else
+                            for k = 1:c
+                                block = image(start_x:end_x, start_y:end_y, k);
+                                new(x,y,k) = mean(block(:));
+                            end
                         end
                     end
                 end
@@ -974,7 +1053,12 @@ classdef ImageProcessing < handle
                 image = im2double(obj.Image);
                 [h, w, c] = size(image);
                 
-                size_new = [round(scale*h), round(scale*w), c];
+                if c == 2
+                    size_new = [round(scale*h), round(scale*w)];
+                else
+                    size_new = [round(scale*h), round(scale*w), c];
+                end
+
                 new = zeros(size_new);
                 
                 for x = 1:size_new(1) 
@@ -986,7 +1070,7 @@ classdef ImageProcessing < handle
                         i1 = floor(i);
                         j1 = floor(j);
                 
-                        for k = 1:c
+                        if c == 1
                             val = 0;
                             total_w = 0;
                             
@@ -999,12 +1083,34 @@ classdef ImageProcessing < handle
                                     wj = Lanczos(j - (j1 + n));
                                     wtot = wi * wj;
                 
-                                    val = val + image(im, jn, k) * wtot;
+                                    val = val + image(im, jn) * wtot;
                                     total_w = total_w + wtot;
                                 end
                             end
                             if total_w ~= 0
-                                new(x,y,k) = val / total_w;
+                                new(x,y) = val / total_w;
+                            end
+                        else
+                            for k = 1:c
+                                val = 0;
+                                total_w = 0;
+                                
+                                for m = -3:4
+                                    for n = -3:4
+                                        im = min(max(i1 + m, 1), h);
+                                        jn = min(max(j1 + n, 1), w);
+                    
+                                        wi = Lanczos(i - (i1 + m));
+                                        wj = Lanczos(j - (j1 + n));
+                                        wtot = wi * wj;
+                    
+                                        val = val + image(im, jn, k) * wtot;
+                                        total_w = total_w + wtot;
+                                    end
+                                end
+                                if total_w ~= 0
+                                    new(x,y,k) = val / total_w;
+                                end
                             end
                         end
                     end
