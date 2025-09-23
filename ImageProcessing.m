@@ -242,7 +242,12 @@ classdef ImageProcessing < handle
                 image = im2double(obj.Image);
                 [h, w, c] = size(image);
                 
-                new = zeros(new_h, new_w, c);
+                if c == 1
+                    new = zeros(new_h, new_w);
+                else
+                    new = zeros(new_h, new_w, c);
+                end
+
                 for x = 1:new_h
                     for y = 1:new_w
                         
@@ -251,9 +256,13 @@ classdef ImageProcessing < handle
                 
                         x_old = min(max(x_old, 1), h);
                         y_old = min(max(y_old, 1), w);
-                
-                        for k = 1:c
-                            new(x,y,k) = image(x_old, y_old, k);
+                        
+                        if c == 1
+                            new(x,y) = image(x_old, y_old);
+                        else
+                            for k = 1:c
+                                new(x,y,k) = image(x_old, y_old, k);
+                            end
                         end
                 
                     end
@@ -271,15 +280,15 @@ classdef ImageProcessing < handle
         
         function Scaling(obj, scale, method)
             switch method
-                case 'nearest'
+                case 'Nearest'
                     image = obj.Nearest(scale);
-                case 'linear'
+                case 'Linear'
                     image = obj.Linear(scale);
-                case 'cubic'
+                case 'Cubic'
                     image = obj.Cubic(scale);
-                case 'area'
+                case 'Area'
                     image = obj.Area(scale);
-                case 'lanczos4'
+                case 'Lanczos4'
                     image = obj.Lanczos4(scale);
                 otherwise
                     error("Error: Unknown method!")
@@ -1221,12 +1230,12 @@ classdef ImageProcessing < handle
                     for y = 2:(w-1)
                         if c == 1
                             block = image((x-1):(x+1),(y-1):(y+1));
-                                new_pixel = median(block);
-                                new(x,y) = new_pixel;
+                            new_pixel = median(block(:));
+                            new(x,y) = new_pixel;
                         else
                             for k = 1:c
                                 block = image((x-1):(x+1),(y-1):(y+1), k);
-                                new_pixel = median(block);
+                                new_pixel = median(block(:));
                                 new(x,y,k) = new_pixel;
                             end
                         end
