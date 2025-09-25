@@ -9,11 +9,16 @@ classdef ImageProcessing < handle
         function obj = ImageProcessing(inputImage)
             if(ischar(inputImage) || isstring(inputImage)) && isfile(inputImage)
                 obj.Image = imread(inputImage);
-            elseif isnumeric(inputImage) && (ndims(inputImage) == 3 && size(inputImage, 3) == 3)
+            elseif isnumeric(inputImage) && ndims(inputImage) >= 2
                 obj.Image = inputImage;
             else
                 error("Unsupported input type");
             end
+        end
+
+        
+        function new = copy(obj)
+            new = ImageProcessing(obj.Image);
         end
         
         %__ RGB to GrayScale
